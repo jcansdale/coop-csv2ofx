@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Co-op CSV to OFX</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="converter.js" defer></script>
+  <script src="game.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="hud"><p class="eyebrow">PRIVATE · FREE · NO INSTALL</p><button id="motion" type="button" class="secondary" aria-pressed="false">Pause animations</button></div>
+      <div class="arcade-mark" aria-hidden="true">
+        <i class="alien"></i><i class="alien"></i><i class="alien"></i>
+      </div>
+      <h1>Co-op CSV <span>to OFX</span></h1>
+      <p class="intro">Convert a Co-operative Bank CSV statement into an OFX file for your finance software.</p>
+      <p class="privacy">Your banking data stays on this device.<small>No uploads, analytics, or saved account details.</small></p>
+      <p class="steps">Choose a file → Check the columns → Review &amp; download</p>
+    </header>
+    <aside class="notice"><strong>For personal banking CSVs:</strong> we recognise the Date, Description, Money In and Money Out headings reported by a third-party export guide. You can change the columns if yours differ. Always check the preview against your statement.</aside>
+    <form id="converter-form">
+      <section aria-labelledby="file-heading">
+        <h2 id="file-heading"><span>1</span> Choose your CSV</h2>
+        <div class="file-field">
+          <label>Statement file (up to 5 MB)<input id="file" type="file" accept=".csv,text/csv" required></label>
+        </div>
+        <details class="file-options">
+          <summary>File options (only if needed)</summary>
+          <div class="fields">
+            <label>Text encoding<select id="encoding"><option value="utf-8">UTF-8</option><option value="windows-1252">Windows-1252 (older exports)</option></select></label>
+            <label>Header row<input id="header-row" type="number" min="1" step="1" value="1" required><small>CSV record number, including any introductory rows.</small></label>
+          </div>
+        </details>
+        <p>Comma-separated files only. Blank records are ignored; invalid transactions are never silently skipped.</p>
+        <button id="load" type="button">Read CSV</button>
+      </section>
+      <section id="mapping-section" aria-labelledby="mapping-heading" hidden>
+        <h2 id="mapping-heading"><span>2</span> Check the columns</h2>
+        <p>We have suggested columns where possible. Use these menus to correct them before previewing.</p>
+        <div class="fields">
+          <label>Transaction date<select id="date-column"></select></label>
+          <label>Description<select id="description-column"></select></label>
+          <label>Amounts<select id="amount-mode"><option value="signed">One signed amount column</option><option value="split">Separate money out / money in</option></select></label>
+          <label id="signed-field">Signed amount<select id="amount-column"></select><small>Positive = money in; negative = money out.</small></label>
+          <label id="debit-field" hidden>Money out (positive values)<select id="debit-column"></select></label>
+          <label id="credit-field" hidden>Money in (positive values)<select id="credit-column"></select></label>
+          <label>Date format<select id="date-format"><option value="uk">DD/MM/YYYY (also DD-MM-YYYY)</option><option value="iso">YYYY-MM-DD</option></select></label>
+        </div>
+        <button id="preview" type="button">Validate &amp; preview</button>
+      </section>
+      <section id="preview-section" aria-labelledby="preview-heading" hidden>
+        <h2 id="preview-heading"><span>3</span> Review &amp; download</h2>
+        <p id="summary"></p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Transaction preview">
+          <table><caption>Transactions in date order (all validated rows are exported)</caption><thead><tr><th scope="col">Date</th><th scope="col">Description</th><th scope="col" class="number">Amount (GBP)</th></tr></thead><tbody id="transactions"></tbody></table>
+        </div>
+        <div class="preview-pages" aria-label="Transaction preview pages">
+          <button id="previous-page" type="button" class="secondary">Previous</button><span id="page-info" role="status"></span><button id="next-page" type="button" class="secondary">Next</button>
+        </div>
+        <div class="fields account">
+          <label>Sort code<input id="sort-code" inputmode="numeric" autocomplete="off" placeholder="12-34-56" required></label>
+          <label>Account number<input id="account-number" inputmode="numeric" autocomplete="off" placeholder="12345678" required></label>
+          <label>Account type<select id="account-type"><option value="CHECKING">Current account</option><option value="SAVINGS">Savings</option></select></label>
+          <label>Statement closing balance (GBP)<input id="balance" type="text" inputmode="decimal" autocomplete="off" placeholder="1234.56" required><small>Copy the actual balance from your bank statement. Do not use the sum of transactions.</small></label>
+          <label>Closing balance date<input id="balance-date" type="date" required><small>Must be on or after the latest transaction.</small></label>
+        </div>
+        <label class="confirmation"><input id="confirm" type="checkbox" required> I have checked every transaction's date, description and money in/out against my statement, and the account and closing balance details are correct.</label>
+        <div class="actions"><button id="download" type="submit">Download OFX</button><button id="clear" type="button" class="secondary">Clear banking data</button></div>
+        <p>Currency: GBP. OFX 2.1.1 (XML). Import a small statement into your finance software first and check its results.</p>
+      </section>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="error" role="alert" hidden></p>
+    <section id="easter-egg" aria-labelledby="egg-heading" hidden>
+      <h2 id="egg-heading">File ready. Mission complete.</h2>
+      <p>There is a little bonus hiding behind those aliens. Your OFX is ready; this part is just for fun.</p>
+      <button id="play-game" type="button" class="secondary" aria-expanded="false" aria-controls="game-panel">Play Space Patrol</button>
+      <div id="game-panel" hidden>
+        <p id="game-instructions">Move with ← / → or A / D. Hold Space to fire. P pauses; Escape closes. On touch screens, hold the buttons below. Clear all 24 aliens before they reach your ship.</p>
+        <div class="game-hud"><span id="game-score">Score: 0</span><span id="game-lives" aria-live="polite">Lives: 3</span></div>
+        <div id="game-arena" tabindex="0" role="region" aria-label="Space Patrol game" aria-describedby="game-instructions game-status">
+          <canvas id="game-canvas" width="600" height="400" aria-label="Space Patrol playing field">This game needs a browser with HTML canvas support.</canvas>
+        </div>
+        <p id="game-status" role="status" aria-live="polite">Ready to play.</p>
+        <div class="game-controls" aria-label="Touch game controls">
+          <button id="game-left" type="button" class="secondary" aria-label="Move left">← Left</button>
+          <button id="game-fire" type="button" aria-label="Fire">Fire</button>
+          <button id="game-right" type="button" class="secondary" aria-label="Move right">Right →</button>
+        </div>
+        <div class="actions"><button id="game-pause" type="button" class="secondary">Pause game</button><button id="game-restart" type="button" class="secondary">Restart</button><button id="game-close" type="button" class="secondary">Close game</button></div>
+        <small>Original arcade mini-game, inspired by classic space shooters. No scores or banking data are saved. Decorative animation controls do not pause gameplay.</small>
+      </div>
+    </section>
+    <footer>Independent tool; not affiliated with The Co-operative Bank. Files and fields stay in memory until you clear them or close this page. Downloads remain on your device.</footer>
+  </main>
+</body>
+</html>
