@@ -165,6 +165,7 @@
     opened = true;
     $("game-panel").hidden = false;
     $("play-game").setAttribute("aria-expanded", "true");
+    $("play-game").textContent = "Close Space Patrol";
     $("game-pause").disabled = false;
     resume();
     draw();
