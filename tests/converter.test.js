@@ -43,6 +43,14 @@
   await test("Explicit preamble header selection", () => {
     assert(c.readTable("Statement\nDate,Description,Amount\n01/02/2026,X,1", 2).records[0].record === 3, "Wrong source record");
   });
+  await test("Third-party reported Co-op personal headings (synthetic data)", () => {
+    const personal = c.readTable('Date,Description,Type,Money In,Money Out,Balance\n01/02/2026,"Corner shop, lunch",DEB,,12.34,100.00\n02/02/2026,Salary,CR,"1,234.56",,1334.56');
+    const suggested = c.suggestMapping(personal.headers);
+    assert(suggested.mode === "split" && suggested.credit === 3 && suggested.debit === 4, "Personal columns not recognised");
+    const rows = c.convert(personal, { ...suggested, dateFormat: "uk" });
+    assert(rows[0].amount === -1234n && rows[1].amount === 123456n, "Wrong personal debit/credit signs");
+    assert(rows[0].description === "Corner shop, lunch", "Description changed");
+  });
   await test("Exact money arithmetic and supported currency forms", () => {
     assert(c.parseMoney("-£1,234.5") === -123450n, "Currency failed");
     assert(c.parseMoney("(GBP 12.34)") === -1234n, "Parentheses failed");

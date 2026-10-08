@@ -5,6 +5,7 @@ const converter = globalThis.CoopConverter;
 let table = null;
 let transactions = null;
 let revision = 0;
+let previewPage = 0;
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 function setMotion(paused) {
@@ -18,11 +19,13 @@ $("motion").addEventListener("click", () => setMotion(document.body.dataset.moti
 
 function invalidate() {
   revision++;
+  globalThis.SpacePatrol.lock();
   transactions = null;
   $("preview-section").hidden = true;
   $("confirm").checked = false;
   $("transactions").replaceChildren();
   $("summary").textContent = "";
+  $("page-info").textContent = "";
   $("status").textContent = "";
   $("error").hidden = true;
 }
@@ -39,6 +42,28 @@ function showMode() {
   $("debit-field").hidden = !split;
   $("credit-field").hidden = !split;
 }
+
+function renderPreview(page = 0) {
+  previewPage = page;
+  const start = page * 100;
+  $("transactions").replaceChildren();
+  for (const item of transactions.slice(start, start + 100)) {
+    const row = document.createElement("tr");
+    const date = `${item.date.slice(6, 8)}/${item.date.slice(4, 6)}/${item.date.slice(0, 4)}`;
+    for (const value of [date, item.description, converter.money(item.amount)]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    row.lastElementChild.className = "number";
+    $("transactions").append(row);
+  }
+  $("page-info").textContent = `${start + 1}–${Math.min(start + 100, transactions.length)} of ${transactions.length}`;
+  $("previous-page").disabled = page === 0;
+  $("next-page").disabled = start + 100 >= transactions.length;
+}
+$("previous-page").addEventListener("click", () => { if (transactions && previewPage > 0) renderPreview(previewPage - 1); });
+$("next-page").addEventListener("click", () => { if (transactions && (previewPage + 1) * 100 < transactions.length) renderPreview(previewPage + 1); });
 
 function resetSource() {
   invalidate();
@@ -92,17 +117,7 @@ $("preview").addEventListener("click", () => {
     transactions = converter.convert(table, mapping);
     const total = transactions.reduce((sum, item) => sum + item.amount, 0n);
     $("summary").textContent = `${transactions.length} validated transactions. Net movement: GBP ${converter.money(total)} (not your closing balance).`;
-    for (const item of transactions.slice(0, 100)) {
-      const row = document.createElement("tr");
-      const date = `${item.date.slice(6, 8)}/${item.date.slice(4, 6)}/${item.date.slice(0, 4)}`;
-      for (const value of [date, item.description, converter.money(item.amount)]) {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.append(cell);
-      }
-      row.lastElementChild.className = "number";
-      $("transactions").append(row);
-    }
+    renderPreview();
     $("preview-section").hidden = false;
     $("status").textContent = "Preview ready. Check the statement and enter its account and closing balance details.";
   } catch (error) { report(error); }
@@ -129,6 +144,7 @@ $("converter-form").addEventListener("submit", async event => {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     $("status").textContent = "OFX download requested. Your banking data has not been uploaded.";
+    globalThis.SpacePatrol.unlock();
   } catch (error) { if (current === revision) report(error); }
   finally { $("download").disabled = false; }
 });
