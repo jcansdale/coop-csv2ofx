@@ -83,6 +83,7 @@ $("load").addEventListener("click", async () => {
   resetSource();
   const current = revision;
   $("load").disabled = true;
+  $("status").textContent = "Reading your CSV...";
   try {
     const file = $("file").files[0];
     if (!file) throw new Error("Choose a CSV file first.");
@@ -128,6 +129,7 @@ $("converter-form").addEventListener("submit", async event => {
   $("error").hidden = true;
   const current = revision;
   $("download").disabled = true;
+  $("status").textContent = "Generating your OFX file...";
   try {
     if (!transactions || !$("confirm").checked) throw new Error("Validate and confirm the preview before downloading.");
     const ofx = await converter.createOFX(transactions, {

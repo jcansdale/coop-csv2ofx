@@ -153,6 +153,7 @@
     if (!context) {
       $("game-panel").hidden = false;
       $("play-game").setAttribute("aria-expanded", "true");
+      $("play-game").textContent = "Close Space Patrol";
       opened = true;
       $("game-pause").disabled = true;
       $("game-status").textContent = "Your browser cannot display this game. Your OFX conversion is unaffected.";
@@ -167,6 +168,7 @@
     $("game-pause").disabled = false;
     resume();
     draw();
+    $("game-panel").scrollIntoView({ block: "start", behavior: "auto" });
   }
   function close() {
     stop();
@@ -174,6 +176,7 @@
     opened = false;
     $("game-panel").hidden = true;
     $("play-game").setAttribute("aria-expanded", "false");
+    $("play-game").textContent = "Play Space Patrol";
   }
   const keyActions = { ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right", Space: "fire" };
   $("game-arena").addEventListener("keydown", event => {
